@@ -72,7 +72,7 @@ inline int __builtin_clzll(uint64_t x) {
 #endif
 }
 
-inline unsigned int __builtin_popcountl(uint64_t x) {
+inline long long __builtin_popcountl(uint64_t x) {
 #ifdef _WIN64
     return __popcnt64(x);
 #else
