@@ -40,12 +40,6 @@
 
 #include <intrin.h>
 
-inline int __builtin_ctzll(uint64_t x) {
-    unsigned long ret;
-    _BitScanForward64(&ret, x);
-    return (int)ret;
-}
-
 // cudatoolkit provides __builtin_ctz for NVCC >= 11.0
 #if !defined(__CUDACC__) || __CUDACC_VER_MAJOR__ < 11
 inline int __builtin_ctz(unsigned long x) {
@@ -55,12 +49,40 @@ inline int __builtin_ctz(unsigned long x) {
 }
 #endif
 
+inline int __builtin_ctzll(uint64_t x) {
+#ifdef _WIN64
+    unsigned long ret;
+    _BitScanForward64(&ret, x);
+    return (int)ret;
+#else
+    return !!unsigned(x) ? __builtin_ctz((unsigned)x) : 32 + __builtin_ctz((unsigned)(x >> 32));
+#endif
+}
+
+inline int __builtin_clz(unsigned x)
+{
+    return (int)_lzcnt_u32(x);
+}
+
 inline int __builtin_clzll(uint64_t x) {
+#ifdef _WIN64
     return (int)__lzcnt64(x);
+#else
+    return !!unsigned(x >> 32) ? __builtin_clz((unsigned)(x >> 32)) : 32 + __builtin_clz((unsigned)x);
+#endif
+}
+
+inline unsigned int __builtin_popcountl(uint64_t x) {
+#ifdef _WIN64
+    return __popcnt64(x);
+#else
+    x -= ((x >> 1) & 0x5555555555555555LL);
+    x = (x & 0x3333333333333333LL) + ((x >> 2) & 0x3333333333333333LL);
+    return (((x + (x >> 4))& 0x0f0f0f0f0f0f0f0fLL)* 0x0101010101010101LL) >> 56;
+#endif
 }
 
 #define __builtin_popcount __popcnt
-#define __builtin_popcountl __popcnt64
 
 // MSVC does not define __SSEx__, and _M_IX86_FP is only defined on 32-bit
 // processors cf.
